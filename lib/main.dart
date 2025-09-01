@@ -20,7 +20,11 @@ class StellarApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        Provider(create: (_) => GoogleCalendarService()),
+        Provider(
+          create: (_) => GoogleCalendarService(
+            sharedCalendarId: "588eba1ad198f9db7798cd84447cc39ddba07659b6a549889ed9a21790ec92c6@group.calendar.google.com",
+          ),
+        ),
       ],
       child: MaterialApp(
         title: 'Stellar App',
@@ -31,6 +35,7 @@ class StellarApp extends StatelessWidget {
         home: const AuthWrapper(),
       ),
     );
+
   }
 }
 

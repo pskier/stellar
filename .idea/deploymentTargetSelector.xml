@@ -4,6 +4,14 @@
     <selectionStates>
       <SelectionState runConfigName="android.app">
         <option name="selectionMode" value="DROPDOWN" />
+        <DropdownSelection timestamp="2025-09-01T14:12:36.128804200Z">
+          <Target type="DEFAULT_BOOT">
+            <handle>
+              <DeviceId pluginId="PhysicalDevice" identifier="serial=RFCR30WWR7E" />
+            </handle>
+          </Target>
+        </DropdownSelection>
+        <DialogSelection />
       </SelectionState>
     </selectionStates>
   </component>

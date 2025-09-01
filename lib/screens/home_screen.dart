@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'groups_screen.dart';
 import 'calendar_screen.dart';
 import 'videos_screen.dart';
@@ -12,6 +13,7 @@ class HomeScreen extends StatelessWidget {
   Future<void> _logout(BuildContext context) async {
     try {
       await FirebaseAuth.instance.signOut();
+      await GoogleSignIn().signOut();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Błąd podczas wylogowania: $e')),
