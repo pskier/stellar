@@ -1,0 +1,1 @@
+ C:\\Users\\skier\\AndroidStudioProjects\\STELLAR\\.dart_tool\\flutter_build\\6dc9ae90771acb6bde937d0f93e22805\\native_assets.json: 

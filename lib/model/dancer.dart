@@ -1,0 +1,3 @@
+class Dancer {
+  //todo
+}
