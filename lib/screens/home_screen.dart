@@ -5,7 +5,6 @@ import 'groups_screen.dart';
 import 'calendar_screen.dart';
 import 'videos_screen.dart';
 import 'info_screen.dart';
-import 'login_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({Key? key}) : super(key: key);

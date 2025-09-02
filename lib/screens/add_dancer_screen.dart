@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:stellar/model/dancer.dart';
+import 'package:stellar/services/firestore_service.dart';
 
 class AddDancerScreen extends StatefulWidget {
-  final String groupId;
-  const AddDancerScreen({Key? key, required this.groupId}) : super(key: key);
+  final String city;
+  const AddDancerScreen({Key? key, required this.city}) : super(key: key);
 
   @override
   State<AddDancerScreen> createState() => _AddDancerScreenState();
@@ -15,53 +14,28 @@ class _AddDancerScreenState extends State<AddDancerScreen> {
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _ageController = TextEditingController();
-  final _cityController = TextEditingController();
   final _additionalInfoController = TextEditingController();
-
-  List<String> availableHours = [];
+  final List<String> availableHours = ['10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00'];
   String? selectedHour;
 
-  @override
-  void initState() {
-    super.initState();
-    loadHours();
-  }
-
-  void loadHours() async {
-    final doc = await FirebaseFirestore.instance
-        .collection('groups')
-        .doc(widget.groupId)
-        .get();
-    final data = doc.data();
-    if (data != null && data['hours'] != null) {
-      setState(() {
-        availableHours = List<String>.from(data['hours']);
-        if (availableHours.isNotEmpty) {
-          selectedHour = availableHours[0];
-        }
-      });
-    }
-  }
-
-  void _saveDancer() async {
+  Future<void> _save() async {
     if (!_formKey.currentState!.validate() || selectedHour == null) return;
 
-    final newDancer = {
-      'firstName': _firstNameController.text,
-      'lastName': _lastNameController.text,
-      'age': int.tryParse(_ageController.text) ?? 0,
-      'city': _cityController.text,
-      'hour': selectedHour!,
-      'additionalInfo': _additionalInfoController.text,
-    };
-
-    await FirebaseFirestore.instance
-        .collection('groups')
-        .doc(widget.groupId)
-        .collection('dancers')
-        .add(newDancer);
-
-    Navigator.pop(context);
+    try {
+      await FirestoreService.dancers.add({
+        'firstName': _firstNameController.text.trim(),
+        'lastName': _lastNameController.text.trim(),
+        'age': int.tryParse(_ageController.text) ?? 0,
+        'city': widget.city,
+        'hour': selectedHour!,
+        'additionalInfo': _additionalInfoController.text.trim(),
+      });
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Błąd dodawania tancerki: $e')),
+      );
+    }
   }
 
   @override
@@ -74,21 +48,30 @@ class _AddDancerScreenState extends State<AddDancerScreen> {
           key: _formKey,
           child: ListView(
             children: [
-              TextFormField(controller: _firstNameController, decoration: const InputDecoration(labelText: 'Imię')),
-              TextFormField(controller: _lastNameController, decoration: const InputDecoration(labelText: 'Nazwisko')),
-              TextFormField(controller: _ageController, decoration: const InputDecoration(labelText: 'Wiek'), keyboardType: TextInputType.number),
-              TextFormField(controller: _cityController, decoration: const InputDecoration(labelText: 'Miejscowość')),
+              TextFormField(controller: _firstNameController, decoration: const InputDecoration(labelText: 'Imię'),
+                validator: (val) => val == null || val.isEmpty ? 'Wpisz imię' : null,
+              ),
+              TextFormField(controller: _lastNameController, decoration: const InputDecoration(labelText: 'Nazwisko'),
+                validator: (val) => val == null || val.isEmpty ? 'Wpisz nazwisko' : null,
+              ),
+              TextFormField(controller: _ageController, decoration: const InputDecoration(labelText: 'Wiek'), keyboardType: TextInputType.number,
+                validator: (val) {
+                  final age = int.tryParse(val ?? '');
+                  if (age == null || age <= 0) return 'Wpisz poprawny wiek';
+                  return null;
+                },
+              ),
               const SizedBox(height: 10),
               DropdownButtonFormField<String>(
                 value: selectedHour,
                 decoration: const InputDecoration(labelText: 'Godzina'),
-                items: availableHours.map((hour) => DropdownMenuItem(value: hour, child: Text(hour))).toList(),
+                items: availableHours.map((h) => DropdownMenuItem(value: h, child: Text(h))).toList(),
                 onChanged: (val) => setState(() => selectedHour = val),
                 validator: (val) => val == null ? 'Wybierz godzinę' : null,
               ),
               TextFormField(controller: _additionalInfoController, decoration: const InputDecoration(labelText: 'Dodatkowe informacje')),
               const SizedBox(height: 20),
-              ElevatedButton(onPressed: _saveDancer, child: const Text('Zapisz')),
+              ElevatedButton(onPressed: _save, child: const Text('Dodaj')),
             ],
           ),
         ),
@@ -96,4 +79,3 @@ class _AddDancerScreenState extends State<AddDancerScreen> {
     );
   }
 }
-

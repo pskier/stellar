@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
+import '../services/firestore_service.dart';
 
 class InfoScreen extends StatefulWidget {
   const InfoScreen({Key? key}) : super(key: key);
@@ -10,9 +12,6 @@ class InfoScreen extends StatefulWidget {
 
 class _InfoScreenState extends State<InfoScreen> {
   final TextEditingController _controller = TextEditingController();
-  final CollectionReference _infoCollection =
-  FirebaseFirestore.instance.collection('info');
-
   bool _loading = false;
 
   Future<void> _addInfo() async {
@@ -22,10 +21,7 @@ class _InfoScreenState extends State<InfoScreen> {
     setState(() => _loading = true);
 
     try {
-      await _infoCollection.add({
-        'message': text,
-        'created_at': FieldValue.serverTimestamp(),
-      });
+      await FirestoreService.addInfo(text);
       _controller.clear();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -38,7 +34,7 @@ class _InfoScreenState extends State<InfoScreen> {
 
   Future<void> _deleteInfo(String docId) async {
     try {
-      await _infoCollection.doc(docId).delete();
+      await FirestoreService.deleteInfo(docId);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Błąd usuwania ogłoszenia: $e')),
@@ -70,9 +66,10 @@ class _InfoScreenState extends State<InfoScreen> {
                   onPressed: _loading ? null : _addInfo,
                   child: _loading
                       ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2))
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
                       : const Text('Dodaj'),
                 ),
               ],
@@ -80,9 +77,7 @@ class _InfoScreenState extends State<InfoScreen> {
             const SizedBox(height: 20),
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
-                stream: _infoCollection
-                    .orderBy('created_at', descending: true)
-                    .snapshots(),
+                stream: FirestoreService.getInfoStream(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
@@ -101,18 +96,16 @@ class _InfoScreenState extends State<InfoScreen> {
                     itemBuilder: (context, index) {
                       final doc = docs[index];
                       final data = doc.data() as Map<String, dynamic>;
-                      final message = data['message'] ?? '';
+                      final info = data['info'] ?? '';
                       final timestamp = data['created_at'] as Timestamp?;
                       final dateString = timestamp != null
-                          ? DateTime.fromMillisecondsSinceEpoch(
-                          timestamp.millisecondsSinceEpoch)
-                          .toLocal()
-                          .toString()
+                          ? DateFormat('dd.MM HH:mm') //
+                          .format(timestamp.toDate())
                           : '';
 
                       return Card(
                         child: ListTile(
-                          title: Text(message),
+                          title: Text(info),
                           subtitle: Text(dateString),
                           onLongPress: () => _deleteInfo(doc.id),
                         ),

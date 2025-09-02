@@ -28,15 +28,4 @@ class Dancer {
       additionalInfo: data['additionalInfo'] ?? '',
     );
   }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'firstName': firstName,
-      'lastName': lastName,
-      'age': age,
-      'city': city,
-      'hour': hour,
-      'additionalInfo': additionalInfo,
-    };
-  }
 }

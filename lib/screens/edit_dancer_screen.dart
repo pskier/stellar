@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:stellar/services/firestore_service.dart';
 import 'package:stellar/model/dancer.dart';
 
 class EditDancerScreen extends StatefulWidget {
-  final String groupId;
   final Dancer dancer;
-
-  const EditDancerScreen({Key? key, required this.groupId, required this.dancer}) : super(key: key);
+  const EditDancerScreen({Key? key, required this.dancer}) : super(key: key);
 
   @override
   State<EditDancerScreen> createState() => _EditDancerScreenState();
@@ -14,14 +12,12 @@ class EditDancerScreen extends StatefulWidget {
 
 class _EditDancerScreenState extends State<EditDancerScreen> {
   final _formKey = GlobalKey<FormState>();
-
   late TextEditingController _firstNameController;
   late TextEditingController _lastNameController;
   late TextEditingController _ageController;
   late TextEditingController _cityController;
   late TextEditingController _additionalInfoController;
-
-  List<String> availableHours = [];
+  final List<String> availableHours = ['10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00'];
   String? selectedHour;
 
   @override
@@ -33,72 +29,36 @@ class _EditDancerScreenState extends State<EditDancerScreen> {
     _cityController = TextEditingController(text: widget.dancer.city);
     _additionalInfoController = TextEditingController(text: widget.dancer.additionalInfo);
     selectedHour = widget.dancer.hour;
-
-    loadHours();
   }
 
-  /// Pobranie godzin z dokumentu grupy
-  void loadHours() async {
-    final doc = await FirebaseFirestore.instance
-        .collection('groups')
-        .doc(widget.groupId)
-        .get();
+  Future<void> _save() async {
+    if (!_formKey.currentState!.validate() || selectedHour == null) return;
 
-    final data = doc.data();
-    if (data != null && data['hours'] != null) {
-      setState(() {
-        availableHours = List<String>.from(data['hours']);
-        if (!availableHours.contains(selectedHour) && availableHours.isNotEmpty) {
-          selectedHour = availableHours[0];
-        }
+    try {
+      await FirestoreService.dancers.doc(widget.dancer.id).update({
+        'firstName': _firstNameController.text.trim(),
+        'lastName': _lastNameController.text.trim(),
+        'age': int.tryParse(_ageController.text) ?? 0,
+        'city': _cityController.text.trim(),
+        'hour': selectedHour!,
+        'additionalInfo': _additionalInfoController.text.trim(),
       });
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Błąd aktualizacji: $e')),
+      );
     }
   }
 
-  /// Zapisanie zmian tancerki
-  void _save() async {
-    if (!_formKey.currentState!.validate() || selectedHour == null) return;
-
-    await FirebaseFirestore.instance
-        .collection('groups')
-        .doc(widget.groupId)
-        .collection('dancers')
-        .doc(widget.dancer.id)
-        .update({
-      'firstName': _firstNameController.text,
-      'lastName': _lastNameController.text,
-      'age': int.tryParse(_ageController.text) ?? 0,
-      'city': _cityController.text,
-      'hour': selectedHour!,
-      'additionalInfo': _additionalInfoController.text,
-    });
-
-    Navigator.pop(context);
-  }
-
-  /// Usunięcie tancerki
-  void _delete() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Usuń tancerkę?'),
-        content: const Text('Czy na pewno chcesz usunąć tę tancerkę?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Anuluj')),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Usuń', style: TextStyle(color: Colors.red))),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      await FirebaseFirestore.instance
-          .collection('groups')
-          .doc(widget.groupId)
-          .collection('dancers')
-          .doc(widget.dancer.id)
-          .delete();
-
-      Navigator.pop(context); // wyjście z ekranu edycji
+  Future<void> _delete() async {
+    try {
+      await FirestoreService.dancers.doc(widget.dancer.id).delete();
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Błąd usuwania: $e')),
+      );
     }
   }
 
@@ -112,46 +72,37 @@ class _EditDancerScreenState extends State<EditDancerScreen> {
           key: _formKey,
           child: ListView(
             children: [
-              TextFormField(
-                controller: _firstNameController,
-                decoration: const InputDecoration(labelText: 'Imię'),
-                validator: (val) => val == null || val.isEmpty ? 'Wprowadź imię' : null,
+              TextFormField(controller: _firstNameController, decoration: const InputDecoration(labelText: 'Imię'),
+                validator: (val) => val == null || val.isEmpty ? 'Wpisz imię' : null,
               ),
-              TextFormField(
-                controller: _lastNameController,
-                decoration: const InputDecoration(labelText: 'Nazwisko'),
-                validator: (val) => val == null || val.isEmpty ? 'Wprowadź nazwisko' : null,
+              TextFormField(controller: _lastNameController, decoration: const InputDecoration(labelText: 'Nazwisko'),
+                validator: (val) => val == null || val.isEmpty ? 'Wpisz nazwisko' : null,
               ),
-              TextFormField(
-                controller: _ageController,
-                decoration: const InputDecoration(labelText: 'Wiek'),
-                keyboardType: TextInputType.number,
-                validator: (val) => val == null || int.tryParse(val) == null ? 'Wprowadź poprawny wiek' : null,
+              TextFormField(controller: _ageController, decoration: const InputDecoration(labelText: 'Wiek'), keyboardType: TextInputType.number,
+                validator: (val) {
+                  final age = int.tryParse(val ?? '');
+                  if (age == null || age <= 0) return 'Wpisz poprawny wiek';
+                  return null;
+                },
               ),
-              TextFormField(
-                controller: _cityController,
-                decoration: const InputDecoration(labelText: 'Miejscowość'),
+              TextFormField(controller: _cityController, decoration: const InputDecoration(labelText: 'Miasto'),
+                validator: (val) => val == null || val.isEmpty ? 'Wpisz miasto' : null,
               ),
               const SizedBox(height: 10),
               DropdownButtonFormField<String>(
                 value: selectedHour,
                 decoration: const InputDecoration(labelText: 'Godzina'),
-                items: availableHours
-                    .map((hour) => DropdownMenuItem(value: hour, child: Text(hour)))
-                    .toList(),
+                items: availableHours.map((h) => DropdownMenuItem(value: h, child: Text(h))).toList(),
                 onChanged: (val) => setState(() => selectedHour = val),
                 validator: (val) => val == null ? 'Wybierz godzinę' : null,
               ),
-              TextFormField(
-                controller: _additionalInfoController,
-                decoration: const InputDecoration(labelText: 'Dodatkowe informacje'),
-              ),
+              TextFormField(controller: _additionalInfoController, decoration: const InputDecoration(labelText: 'Dodatkowe informacje')),
               const SizedBox(height: 20),
               ElevatedButton(onPressed: _save, child: const Text('Zapisz')),
               const SizedBox(height: 10),
               ElevatedButton(
-                onPressed: _delete,
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                onPressed: _delete,
                 child: const Text('Usuń'),
               ),
             ],

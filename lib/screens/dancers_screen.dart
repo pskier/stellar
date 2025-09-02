@@ -1,24 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:stellar/screens/edit_dancer_screen.dart';
-import 'dancer_detail_screen.dart';
+import 'package:stellar/services/firestore_service.dart';
 import 'package:stellar/model/dancer.dart';
+import 'dancer_detail_screen.dart';
+import 'edit_dancer_screen.dart';
 import 'add_dancer_screen.dart';
 
 class DancersScreen extends StatelessWidget {
-  final String groupId;
-  DancersScreen({Key? key, required this.groupId}) : super(key: key);
-
-  final CollectionReference dancersRef = FirebaseFirestore.instance
-      .collection('groups');
+  final String city;
+  const DancersScreen({Key? key, required this.city}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final groupDancersRef = dancersRef.doc(groupId).collection('dancers');
+    final dancersRef = FirestoreService.dancers;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Tancerki')),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: groupDancersRef.snapshots(),
+      appBar: AppBar(title: Text('Tancerki: $city')),
+      body: StreamBuilder(
+        stream: dancersRef.where('city', isEqualTo: city).snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
 
@@ -26,7 +24,7 @@ class DancersScreen extends StatelessWidget {
               .map((doc) => Dancer.fromMap(doc.id, doc.data() as Map<String, dynamic>))
               .toList();
 
-          // Grupa tancerek po godzinach
+          // Grupowanie po godzinach
           final groupedDancers = <String, List<Dancer>>{};
           for (var dancer in dancers) {
             groupedDancers.putIfAbsent(dancer.hour, () => []).add(dancer);
@@ -39,29 +37,19 @@ class DancersScreen extends StatelessWidget {
                 children: entry.value.map((dancer) {
                   return ListTile(
                     title: Text('${dancer.firstName} ${dancer.lastName[0]}.'),
-
-                    // Kliknięcie: wchodzimy w szczegóły
                     onTap: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => DancerDetailScreen(
-                            groupId: groupId,
-                            dancer: dancer,
-                          ),
+                          builder: (_) => DancerDetailScreen(dancer: dancer),
                         ),
                       );
                     },
-
-                    // Przytrzymanie: wchodzimy w edycję
                     onLongPress: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => EditDancerScreen(
-                            groupId: groupId,
-                            dancer: dancer,
-                          ),
+                          builder: (_) => EditDancerScreen(dancer: dancer),
                         ),
                       );
                     },
@@ -77,9 +65,7 @@ class DancersScreen extends StatelessWidget {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (_) => AddDancerScreen(groupId: groupId),
-            ),
+            MaterialPageRoute(builder: (_) => AddDancerScreen(city: city)),
           );
         },
       ),

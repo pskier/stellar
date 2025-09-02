@@ -9,7 +9,6 @@ import 'services/google_calendar_service.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
-
   runApp(const StellarApp());
 }
 
