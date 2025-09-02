@@ -1,6 +1,7 @@
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/calendar/v3.dart' as calendar;
 import 'package:http/http.dart' as http;
+import 'package:firebase_auth/firebase_auth.dart';
 
 class AuthenticatedClient extends http.BaseClient {
   final Map<String, String> _headers;
@@ -22,7 +23,12 @@ class AuthenticatedClient extends http.BaseClient {
 }
 
 class GoogleCalendarService {
-  static const _scopes = [calendar.CalendarApi.calendarScope];
+  static const _scopes = [
+    'email',
+    'profile',
+    calendar.CalendarApi.calendarScope,
+    calendar.CalendarApi.calendarEventsScope,
+  ];
 
   final GoogleSignIn googleSignIn;
   GoogleSignInAccount? _currentUser;
@@ -97,11 +103,19 @@ class GoogleCalendarService {
   }
 
   Future<void> signOut() async {
-    await googleSignIn.signOut();
-    _currentUser = null;
-    _calendarApi = null;
-    _authClient?.close();
-    _authClient = null;
+    try {
+      await googleSignIn.signOut();
+      await FirebaseAuth.instance.signOut();
+
+      _currentUser = null;
+      _calendarApi = null;
+      _authClient?.close();
+      _authClient = null;
+
+      print("Wylogowano poprawnie z Google i Firebase.");
+    } catch (e) {
+      print("Błąd podczas wylogowania: $e");
+    }
   }
 
   bool get isSignedIn => _currentUser != null;
@@ -109,9 +123,12 @@ class GoogleCalendarService {
   Future<void> ensureSignedIn() async {
     if (!isSignedIn) {
       _currentUser = await googleSignIn.signInSilently();
-      if (_currentUser == null) throw Exception('Nie jesteś zalogowany.');
+      if (_currentUser == null) {
+        _currentUser = await googleSignIn.signIn();
+      }
       await _initCalendarApi();
     }
   }
+
 }
 
