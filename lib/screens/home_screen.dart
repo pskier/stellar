@@ -3,7 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'groups_screen.dart';
 import 'calendar_screen.dart';
-import 'videos_screen.dart';
+import 'photos_screen.dart';
 import 'info_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -76,7 +76,7 @@ class HomeScreen extends StatelessWidget {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => VideosScreen()),
+                  MaterialPageRoute(builder: (_) => PhotosScreen()),
                 );
               },
               backgroundColor: tileColor,
