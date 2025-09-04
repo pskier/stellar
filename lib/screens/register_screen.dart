@@ -29,10 +29,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         password: _password,
       );
 
-      // Opcjonalnie: zaktualizuj profil użytkownika o imię i nazwisko
       await credential.user?.updateDisplayName('$_firstName $_lastName');
 
-      // Po rejestracji wróć do logowania lub innego ekranu
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Rejestracja powiodła się. Zaloguj się.')),

@@ -22,7 +22,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   bool _loading = false;
   String? _errorMessage;
 
-  String _selectedCalendar = "private"; // "private" lub "shared"
+  String _selectedCalendar = "private";
 
   @override
   void initState() {

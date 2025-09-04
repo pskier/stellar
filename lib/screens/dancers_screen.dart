@@ -24,7 +24,6 @@ class DancersScreen extends StatelessWidget {
               .map((doc) => Dancer.fromMap(doc.id, doc.data() as Map<String, dynamic>))
               .toList();
 
-          // Grupowanie po godzinach
           final groupedDancers = <String, List<Dancer>>{};
           for (var dancer in dancers) {
             groupedDancers.putIfAbsent(dancer.hour, () => []).add(dancer);
